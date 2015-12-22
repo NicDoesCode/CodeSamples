@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>Simple microphone example</title>
+        <style>
+            body {
+                font-family: sans-serif;
+                font-size: 9pt; 
+            }
+        </style>
+    </head> 
+    <body>
+        
+        <h1>Simple microphone example</h1>
+        <p>Relays sound from your microphone using WebRTC.<p>
+        <p><em>This example might not work on Chrome unless viewed over a HTTPS connection.</em><p>
+        <button id="btnStartMonitoring">Start</button>
+        <button id="btnStopMonitoring">Stop</button>
+        
+        <script>
+
+            var audioContext = new (window.AudioContext || window.webKitAudioContext)();
+            var webRtcSource; 
+            
+            function handle_startMonitoring() {
+                navigator.getUserMedia = (navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia);
+                navigator.getUserMedia(
+                    { audio: true, video: false }, 
+                    function (mediaStream) {
+                        webRtcSource = audioContext.createMediaStreamSource(mediaStream);
+                        webRtcSource.connect(audioContext.destination);
+                    }, 
+                    function (error) {
+                        console.log("There was an error when getting microphone input: " + err);
+                    }
+                );
+            }
+
+            function handle_stopMonitoring() {
+                webRtcSource.disconnect(); 
+                webRtcSource = null; 
+            }
+            
+            document.querySelector("#btnStartMonitoring").onclick = handle_startMonitoring; // Wire up start button
+            document.querySelector("#btnStopMonitoring").onclick = handle_stopMonitoring; // Wire up stop button 
+
+        </script>
+
+    </body>
+</html>
