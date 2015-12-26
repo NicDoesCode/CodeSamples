@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>Decode an MP3 using Web Audio API</title>
+        <style>
+            body {
+                font-family: sans-serif;
+                font-size: 9pt; 
+            }
+        </style>
+    </head> 
+    <body>
+        
+        <form id="playerForm">
+            <h1>Decode an MP3 using Web Audio API</h1>
+            <p>This example will show you how to decode an MP3 file using the Web Audio API.<p>
+            <p><input type="file" id="mp3FileSelect" /></p>
+            <p><input type="button" id="playButton" value="Play" /></p>
+        </form>
+        
+        <script>
+
+
+            var audioContext = new (window.AudioContext || window.webKitAudioContext)(); // Our audio context
+            var source = null; // This is the BufferSource containing the buffered audio
+            
+            
+            // Used the File API in order to asynchronously obtain the bytes of the file that the user selected in the 
+            // file input box. The bytes are returned using a callback method that passes the resulting ArrayBuffer. 
+            function obtainMp3BytesInArrayBufferUsingFileAPI(selectedFile, callback) {
+
+                var reader = new FileReader(); 
+                reader.onload = function (ev) {
+                    // The FileReader returns us the bytes from the computer's file system as an ArrayBuffer  
+                    var mp3BytesAsArrayBuffer = reader.result; 
+                    callback(mp3BytesAsArrayBuffer); 
+                }
+                reader.readAsArrayBuffer(selectedFile);
+                
+            }
+              
+                        
+            function decodeMp3BytesFromArrayBufferAndPlay(mp3BytesAsArrayBuffer) {
+                
+                // The AudioContext will asynchronously decode the bytes in the ArrayBuffer for us and return us
+                // the decoded samples in an AudioBuffer object.  
+                audioContext.decodeAudioData(mp3BytesAsArrayBuffer, function (decodedSamplesAsAudioBuffer) {
+                        
+                    // Clear any existing audio source that we might be using
+                    if (source != null) {
+                        source.disconnect(audioContext.destination);
+                        source = null; // Leave existing source to garbage collection
+                    } 
+                    
+                    // In order to play the decoded samples contained in the audio buffer we need to wrap them in  
+                    // an AudioBufferSourceNode object. This object will stream the audio samples to any other 
+                    // AudioNode or AudioDestinationNode object. 
+                    source = audioContext.createBufferSource();
+                    source.buffer = decodedSamplesAsAudioBuffer; // set the buffer to play to our audio buffer
+                    source.connect(audioContext.destination); // connect the source to the output destinarion 
+                    source.start(0); // tell the audio buffer to play from the beginning
+                }); 
+                
+            }
+            
+            
+            // Assign event handler for when the 'Play' button is clicked
+            playerForm.playButton.onclick = function (event) {
+                
+                event.stopPropagation();
+                
+                // I've added two basic validation checks here, but in a real world use case you'd probably be a little more stringient. 
+                // Be aware that Firefox uses 'audio/mpeg' as the MP3 MIME type, Chrome uses 'audio/mp3'. 
+                var fileInput = document.forms[0].mp3FileSelect; 
+                if (fileInput.files.length > 0 && ["audio/mpeg", "audio/mp3"].includes(fileInput.files[0].type)) {
+                    
+                    // We're using the File API to obtain the MP3 bytes, here but they could also come from an XMLHttpRequest 
+                    // object that has downloaded an MP3 file from the internet, or any other ArrayBuffer containing MP3 data. 
+                    obtainMp3BytesInArrayBufferUsingFileAPI(fileInput.files[0], function (mp3BytesAsArrayBuffer) {
+                       
+                        // Pass the ArrayBuffer to the decode method
+                        decodeMp3BytesFromArrayBufferAndPlay(mp3BytesAsArrayBuffer);  
+                                          
+                    });
+                    
+                } 
+                else alert("Error! No attached file or attached file was of the wrong type!");
+                                    
+            }
+
+
+        </script>
+        
+    </body>
+</html>
